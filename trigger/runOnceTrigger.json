@@ -1,0 +1,32 @@
+{
+    "name": "runOnceTrigger",
+    "properties": {
+        "annotations": [],
+        "runtimeState": "Started",
+        "pipelines": [
+            {
+                "pipelineReference": {
+                    "referenceName": "PL_Process_All_Files",
+                    "type": "PipelineReference"
+                }
+            }
+        ],
+        "type": "ScheduleTrigger",
+        "typeProperties": {
+            "recurrence": {
+                "frequency": "Day",
+                "interval": 1,
+                "startTime": "2025-07-20T18:29:00",
+                "timeZone": "India Standard Time",
+                "schedule": {
+                    "minutes": [
+                        3
+                    ],
+                    "hours": [
+                        0
+                    ]
+                }
+            }
+        }
+    }
+}

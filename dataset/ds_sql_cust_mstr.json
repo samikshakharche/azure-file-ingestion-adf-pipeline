@@ -1,0 +1,31 @@
+{
+    "name": "ds_sql_cust_mstr",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "ls_sql",
+            "type": "LinkedServiceReference"
+        },
+        "annotations": [],
+        "type": "AzureSqlTable",
+        "schema": [
+            {
+                "name": "ID",
+                "type": "int",
+                "precision": 10
+            },
+            {
+                "name": "Name",
+                "type": "varchar"
+            },
+            {
+                "name": "FileDate",
+                "type": "date"
+            }
+        ],
+        "typeProperties": {
+            "schema": "dbo",
+            "table": "CUST_MSTR"
+        }
+    },
+    "type": "Microsoft.DataFactory/factories/datasets"
+}

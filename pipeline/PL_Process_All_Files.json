@@ -1,0 +1,235 @@
+{
+    "name": "PL_Process_All_Files",
+    "properties": {
+        "activities": [
+            {
+                "name": "Get Metadata1",
+                "type": "GetMetadata",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "dataset": {
+                        "referenceName": "ds_delimited_csv",
+                        "type": "DatasetReference",
+                        "parameters": {
+                            "folderPath": {
+                                "value": "rawfiles/",
+                                "type": "Expression"
+                            }
+                        }
+                    },
+                    "fieldList": [
+                        "childItems"
+                    ],
+                    "storeSettings": {
+                        "type": "AzureBlobFSReadSettings",
+                        "recursive": true,
+                        "enablePartitionDiscovery": false
+                    },
+                    "formatSettings": {
+                        "type": "DelimitedTextReadSettings"
+                    }
+                }
+            },
+            {
+                "name": "Filter1",
+                "type": "Filter",
+                "dependsOn": [
+                    {
+                        "activity": "Get Metadata1",
+                        "dependencyConditions": [
+                            "Completed"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "items": {
+                        "value": "@activity('Get Metadata1').output.childItems\n",
+                        "type": "Expression"
+                    },
+                    "condition": {
+                        "value": "@startsWith(item().name, 'CUST_MSTR_')\n\n",
+                        "type": "Expression"
+                    }
+                }
+            },
+            {
+                "name": "ForEach1",
+                "type": "ForEach",
+                "dependsOn": [
+                    {
+                        "activity": "Filter1",
+                        "dependencyConditions": [
+                            "Completed"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "items": {
+                        "value": "@activity('Filter1').output.value",
+                        "type": "Expression"
+                    },
+                    "activities": [
+                        {
+                            "name": "Set variable1",
+                            "type": "SetVariable",
+                            "dependsOn": [],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "varDate",
+                                "value": {
+                                    "value": "@formatDateTime(substring(item().name, 10, 8), 'yyyy-MM-dd')\n",
+                                    "type": "Expression"
+                                }
+                            }
+                        },
+                        {
+                            "name": "Copy data1",
+                            "type": "Copy",
+                            "dependsOn": [
+                                {
+                                    "activity": "Set variable1",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "source": {
+                                    "type": "DelimitedTextSource",
+                                    "storeSettings": {
+                                        "type": "AzureBlobFSReadSettings",
+                                        "recursive": true,
+                                        "wildcardFolderPath": {
+                                            "value": "rawfiles",
+                                            "type": "Expression"
+                                        },
+                                        "wildcardFileName": {
+                                            "value": "CUST_MSTR_*.csv",
+                                            "type": "Expression"
+                                        },
+                                        "enablePartitionDiscovery": false
+                                    },
+                                    "formatSettings": {
+                                        "type": "DelimitedTextReadSettings"
+                                    }
+                                },
+                                "sink": {
+                                    "type": "AzureSqlSink",
+                                    "preCopyScript": {
+                                        "value": "TRUNCATE TABLE CUST_MSTR\n",
+                                        "type": "Expression"
+                                    },
+                                    "writeBehavior": "insert",
+                                    "sqlWriterUseTableLock": false
+                                },
+                                "enableStaging": false,
+                                "translator": {
+                                    "type": "TabularTranslator",
+                                    "mappings": [
+                                        {
+                                            "source": {
+                                                "name": "CustomerID",
+                                                "type": "String",
+                                                "physicalType": "String"
+                                            },
+                                            "sink": {
+                                                "name": "ID",
+                                                "type": "Int32",
+                                                "physicalType": "int"
+                                            }
+                                        },
+                                        {
+                                            "source": {
+                                                "name": "CustomerName",
+                                                "type": "String",
+                                                "physicalType": "String"
+                                            },
+                                            "sink": {
+                                                "name": "Name",
+                                                "type": "String",
+                                                "physicalType": "varchar"
+                                            }
+                                        },
+                                        {
+                                            "source": {
+                                                "name": "Email",
+                                                "type": "String",
+                                                "physicalType": "String"
+                                            },
+                                            "sink": {
+                                                "name": "FileDate",
+                                                "type": "DateTime",
+                                                "physicalType": "date"
+                                            }
+                                        },
+                                        {
+                                            "source": {
+                                                "name": "FileDate"
+                                            },
+                                            "sink": {
+                                                "name": "@variables('varDate')"
+                                            }
+                                        }
+                                    ],
+                                    "typeConversion": true,
+                                    "typeConversionSettings": {
+                                        "allowDataTruncation": true,
+                                        "treatBooleanAsNumber": false
+                                    }
+                                }
+                            },
+                            "inputs": [
+                                {
+                                    "referenceName": "ds_delimited_csv",
+                                    "type": "DatasetReference",
+                                    "parameters": {
+                                        "folderPath": {
+                                            "value": "rawfiles",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                }
+                            ],
+                            "outputs": [
+                                {
+                                    "referenceName": "ds_sql_cust_mstr",
+                                    "type": "DatasetReference"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        ],
+        "variables": {
+            "varDate": {
+                "type": "String"
+            }
+        },
+        "annotations": [],
+        "lastPublishTime": "2025-07-20T17:45:47Z"
+    },
+    "type": "Microsoft.DataFactory/factories/pipelines"
+}
